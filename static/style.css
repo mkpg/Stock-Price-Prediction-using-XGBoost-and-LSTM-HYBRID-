@@ -1,0 +1,111 @@
+/* General Styles */
+body {
+    background-color: #f4f7f6;
+    font-family: 'Arial', sans-serif;
+    color: #333;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Container */
+.container {
+    max-width: 800px;
+}
+
+/* Header */
+h1 {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+/* Stock Input Form */
+.input-group {
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.input-group input {
+    border-radius: 8px 0 0 8px;
+}
+
+.input-group button {
+    border-radius: 0 8px 8px 0;
+}
+
+/* Card Styling */
+.card {
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    font-size: 1.4rem;
+    text-align: center;
+}
+
+/* Buy/Sell Badge */
+.badge {
+    font-size: 1.1rem;
+    padding: 8px 12px;
+}
+
+/* Accuracy Metrics */
+.row p {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #555;
+}
+
+/* Graph Styling */
+.mt-4 {
+    text-align: center;
+}
+
+/* --- Theme Switch Button --- */
+.theme-toggle {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    background: #222;
+    color: #fff;
+    border: none;
+    padding: 8px 15px;
+    font-size: 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.theme-toggle:hover {
+    background: #444;
+}
+
+/* Dark Mode Styles */
+.dark-mode {
+    background-color: #1a1a1a;
+    color: #ddd;
+}
+
+.dark-mode h1,
+.dark-mode .card-header {
+    color: #fff;
+}
+
+.dark-mode .card {
+    background-color: #333;
+    color: #ddd;
+    box-shadow: 0px 4px 10px rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .badge {
+    color: #fff;
+}
+
+.dark-mode .theme-toggle {
+    background: #ddd;
+    color: #222;
+}
+
+.dark-mode .theme-toggle:hover {
+    background: #ccc;
+}
