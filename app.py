@@ -1,5 +1,17 @@
 import sys
+import os
 import re
+import warnings
+
+# Suppress TensorFlow warnings BEFORE importing it
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+warnings.filterwarnings('ignore')
+
+sys.stdout.reconfigure(encoding='utf-8')
+sys.stderr.reconfigure(encoding='utf-8')
+
+print("[APP] Starting QuantumTrade PRO...")
+
 import numpy as np
 import pandas as pd
 import requests
@@ -18,15 +30,15 @@ import xgboost as xgb
 from datetime import datetime, timedelta
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
-import warnings
 import json
-import os
 import random
 from dotenv import load_dotenv
 
 # Load environment variables - check Render secret files first, then local .env
 load_dotenv('/etc/secrets/.env')  # Render secret files path
 load_dotenv()  # Local .env fallback
+
+print("[APP] Imports complete, connecting to database...")
 
 # MongoDB integration
 from db import (
@@ -38,10 +50,7 @@ from db import (
     get_user_by_recovery_phrase
 )
 
-sys.stdout.reconfigure(encoding='utf-8')
-sys.stderr.reconfigure(encoding='utf-8')
-warnings.filterwarnings('ignore')
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+print("[APP] Database connected, initializing Flask...")
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'default-dev-key-change-this')
@@ -54,6 +63,8 @@ serializer = URLSafeTimedSerializer(app.secret_key)
 
 # ============= Config =============
 POLYGON_API_KEY = os.environ.get("POLYGON_API_KEY", "")
+
+print(f"[APP] Flask initialized. API Key loaded: {'YES' if POLYGON_API_KEY else 'NO'}")
 
 
 # ============= Auth Helpers =============

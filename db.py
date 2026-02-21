@@ -9,16 +9,26 @@ from bson import ObjectId
 import requests
 import os
 
+# Load env vars (needed when db.py is imported before app.py's load_dotenv)
+try:
+    from dotenv import load_dotenv
+    load_dotenv('/etc/secrets/.env')  # Render secret files
+    load_dotenv()  # Local .env fallback
+except ImportError:
+    pass
+
 # ============= MongoDB Connection =============
-# Use environment variable for Render (MONGO_URI), fallback to local for dev
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/quantumtrade_pro")
+print(f"[DB] Connecting to MongoDB...")
 client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
 
-# If MONGO_URI is set, try to get default db, else fallback to quantumtrade_pro
+# Get database name from URI or fallback
 try:
     db = client.get_default_database()
+    print(f"[DB] Using database: {db.name}")
 except Exception:
     db = client["quantumtrade_pro"]
+    print(f"[DB] Using fallback database: quantumtrade_pro")
 
 # Collections
 predictions_col = db["predictions"]
@@ -26,16 +36,20 @@ watchlist_col = db["watchlist"]
 model_feedback_col = db["model_feedback"]  # Adaptive learning store
 users_col = db["users"]  # User accounts
 
-# Create indexes for performance
-predictions_col.create_index([("created_at", DESCENDING)])
-predictions_col.create_index([("ticker", ASCENDING)])
-predictions_col.create_index([("signal", ASCENDING)])
-predictions_col.create_index([("outcome", ASCENDING)])
-predictions_col.create_index([("user_id", ASCENDING)])
-watchlist_col.create_index([("ticker", ASCENDING), ("user_id", ASCENDING)], unique=True)
-model_feedback_col.create_index([("ticker", ASCENDING)], unique=True)
-users_col.create_index([("username", ASCENDING)], unique=True)
-users_col.create_index([("email", ASCENDING)], unique=True)
+# Create indexes for performance (non-blocking — app starts even if DB is down)
+try:
+    predictions_col.create_index([("created_at", DESCENDING)])
+    predictions_col.create_index([("ticker", ASCENDING)])
+    predictions_col.create_index([("signal", ASCENDING)])
+    predictions_col.create_index([("outcome", ASCENDING)])
+    predictions_col.create_index([("user_id", ASCENDING)])
+    watchlist_col.create_index([("ticker", ASCENDING), ("user_id", ASCENDING)], unique=True)
+    model_feedback_col.create_index([("ticker", ASCENDING)], unique=True)
+    users_col.create_index([("username", ASCENDING)], unique=True)
+    users_col.create_index([("email", ASCENDING)], unique=True)
+    print("[DB] Indexes created successfully")
+except Exception as e:
+    print(f"[DB] Warning: Could not create indexes (DB may be unavailable): {e}")
 
 
 # ============= User Account Functions =============
