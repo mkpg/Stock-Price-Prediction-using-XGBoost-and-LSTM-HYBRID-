@@ -1,163 +1,397 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hybrid Stock Prediction</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>QuantumTrade Pro — AI Stock Prediction Engine</title>
+    <meta name="description"
+        content="Industrial-grade LSTM + XGBoost ensemble stock prediction platform with 80%+ directional accuracy.">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 </head>
-<body>
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/">📊 Hybrid Stock Prediction</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar-pro">
+        <a href="/" class="logo">
+            <div class="logo-icon">⚡</div>
+            <span>QuantumTrade<span style="color: var(--accent-cyan); font-weight: 400;">PRO</span></span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="/" class="active">Predict</a></li>
+            <li><a href="/analytics">Analytics</a></li>
+            <li><a href="/portfolio">Portfolio</a></li>
+            <li><a href="/history">History</a></li>
+        </ul>
+        <div class="nav-actions">
+            {% if logged_in %}
+            <a href="/profile" class="nav-user-btn" title="Profile">
+                <i class="bi bi-person-circle"></i>
+                <span class="nav-username">{{ current_user.first_name }}</span>
+            </a>
+            <a href="/logout" class="nav-logout-btn" title="Logout">
+                <i class="bi bi-box-arrow-right"></i>
+            </a>
+            {% else %}
+            <a href="/login" class="nav-login-btn">Sign In</a>
+            {% endif %}
+            <button class="theme-btn" id="themeToggle" title="Toggle theme">
+                <i class="bi bi-moon-stars-fill"></i>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/dashboard">Dashboard</a></li>
-                </ul>
-            </div>
+            <button class="mobile-nav-btn" id="mobileNavBtn">
+                <i class="bi bi-list"></i>
+            </button>
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <header class="bg-primary text-white text-center py-5">
-        <div class="container">
-            <h1 class="display-4">🔮 Hybrid Stock Prediction</h1>
-            <p class="lead">Harnessing the power of LSTM & XGBoost for accurate stock market predictions.</p>
-            <a href="/dashboard" class="btn btn-light btn-lg mt-3">Start Predicting 🚀</a>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages container-pro">
+        {% for category, message in messages %}
+        <div class="flash-msg flash-{{ category }}">
+            <span>{{ message }}</span>
+            <button onclick="this.parentElement.remove()" class="flash-close">&times;</button>
         </div>
-    </header>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
 
-    <!-- About Section -->
-    <section class="container my-5">
-        <div class="row">
-            <div class="col-md-6">
-                <img src="../images.jpg" class="img-fluid rounded shadow" alt="Stock Market">
-                <!-- https://source.unsplash.com/500x300/?stock,market -->
-            </div>
-            <div class="col-md-6">
-                <h2>🔍 What is the Hybrid Model?</h2>
-                <p>Our Hybrid Model combines **LSTM** (Long Short-Term Memory) and **XGBoost** (Extreme Gradient Boosting) to predict stock prices more accurately. It leverages the sequential power of LSTMs and the fast learning capability of XGBoost.</p>
-                <ul>
-                    <li><strong>LSTM</strong>: Captures time-series trends and long-term dependencies.</li>
-                    <li><strong>XGBoost</strong>: Learns patterns quickly from historical stock data.</li>
-                    <li><strong>Hybrid Approach</strong>: Averages predictions from both models for better accuracy.</li>
-                </ul>
-            </div>
-        </div>
-    </section>
 
-    <!-- Advantages Section -->
-    <section class="bg-light py-5">
-        <div class="container text-center">
-            <h2>✨ Advantages of Our Hybrid Model</h2>
-            <div class="row mt-4">
-                <div class="col-md-4">
-                    <div class="card shadow">
-                        <div class="card-body">
-                            <h4>📊 Higher Accuracy</h4>
-                            <p>Combining two powerful models ensures better predictions than traditional methods.</p>
-                        </div>
-                    </div>
+    <!-- Main Content -->
+    <main class="main-wrapper">
+        <!-- Hero Section -->
+        <section class="hero-section container-pro">
+            <div class="hero-badge">
+                <span class="pulse-dot"></span>
+                LIVE PREDICTION ENGINE
+            </div>
+            <h1 class="hero-title">
+                <span class="gradient-text">AI-Powered Stock</span><br>
+                Prediction Platform
+            </h1>
+            <p class="hero-subtitle">
+                Industrial-grade LSTM + XGBoost ensemble with 35+ technical indicators,
+                walk-forward validation, and dynamic model weighting for maximum accuracy.
+            </p>
+
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <div class="hero-stat-value" style="color: var(--accent-green);">{{ stats.avg_accuracy }}%</div>
+                    <div class="hero-stat-label">Directional Accuracy</div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card shadow">
-                        <div class="card-body">
-                            <h4>⚡ Fast & Efficient</h4>
-                            <p>XGBoost speeds up predictions while LSTM ensures long-term accuracy.</p>
-                        </div>
-                    </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value" style="color: var(--accent-cyan);">{{ stats.total_features }}+</div>
+                    <div class="hero-stat-label">Technical Features</div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card shadow">
-                        <div class="card-body">
-                            <h4>📈 Real-Time Insights</h4>
-                            <p>Get real-time stock predictions with dynamic visualization.</p>
-                        </div>
-                    </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value" style="color: var(--accent-purple);">{{ stats.data_years }}Y</div>
+                    <div class="hero-stat-label">Historical Data</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value" style="color: var(--accent-gold);">{{ stats.model_count }}</div>
+                    <div class="hero-stat-label">ML Models</div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Model Comparison Section -->
-    <section class="container my-5">
-        <h2 class="text-center">📊 Comparison with Other Models</h2>
-        <div class="table-responsive mt-4">
-            <table class="table table-bordered text-center">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Model</th>
-                        <th>Prediction Accuracy</th>
-                        <th>Speed</th>
-                        <th>Suitability</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Linear Regression</td>
-                        <td>⭑⭑⭒⭒⭒ (60%)</td>
-                        <td>✅ Fast</td>
-                        <td>Basic Trend Analysis</td>
-                    </tr>
-                    <tr>
-                        <td>XGBoost</td>
-                        <td>⭑⭑⭑⭑⭒ (85%)</td>
-                        <td>⚡ Very Fast</td>
-                        <td>High-Speed Predictions</td>
-                    </tr>
-                    <tr>
-                        <td>LSTM</td>
-                        <td>⭑⭑⭑⭑⭒ (88%)</td>
-                        <td>⏳ Slower</td>
-                        <td>Long-Term Trend Analysis</td>
-                    </tr>
-                    <tr class="table-success">
-                        <td>Hybrid (LSTM + XGBoost)</td>
-                        <td>⭑⭑⭑⭑⭑ (95%)</td>
-                        <td>🚀 Optimized</td>
-                        <td>Best for Short & Long-Term Predictions</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </section>
+        <!-- Prediction Card -->
+        <section class="container-pro">
+            <div class="predict-card" id="predictCard">
+                <h2><i class="bi bi-search" style="color: var(--accent-cyan);"></i> Enter Stock Ticker</h2>
+                <form id="predictionForm" method="POST" action="/predict" class="predict-form">
+                    <input type="text" id="tickerInput" name="ticker" class="predict-input"
+                        placeholder="Enter ticker symbol (e.g. AAPL, MSFT, TSLA)" maxlength="5" autocomplete="off"
+                        required>
+                    <button class="predict-btn" type="submit" id="predictBtn">
+                        <i class="bi bi-play-circle-fill"></i>
+                        PREDICT
+                    </button>
+                </form>
+                <div class="ticker-chips">
+                    <span class="ticker-chip" onclick="setTicker('AAPL')">AAPL</span>
+                    <span class="ticker-chip" onclick="setTicker('MSFT')">MSFT</span>
+                    <span class="ticker-chip" onclick="setTicker('TSLA')">TSLA</span>
+                    <span class="ticker-chip" onclick="setTicker('GOOGL')">GOOGL</span>
+                    <span class="ticker-chip" onclick="setTicker('AMZN')">AMZN</span>
+                    <span class="ticker-chip" onclick="setTicker('NVDA')">NVDA</span>
+                    <span class="ticker-chip" onclick="setTicker('META')">META</span>
+                    <span class="ticker-chip" onclick="setTicker('SPY')">SPY</span>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div class="loading-overlay" id="loadingState">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Analyzing <span id="loadingTicker"
+                        style="color: var(--accent-cyan); font-family: var(--font-mono);">...</span></div>
+                <div class="loading-subtext">Training LSTM & XGBoost • Computing 35+ indicators • Walk-forward
+                    validation</div>
+                <div class="loading-progress">
+                    <div class="loading-progress-bar"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        {% if ticker %}
+        <section class="container-pro section-spacing animate-in">
+            <!-- Results Header -->
+            <div class="results-header">
+                <h2>
+                    <span class="ticker-badge">{{ ticker }}</span> — Prediction Results
+                </h2>
+                <a href="/" class="btn-outline">
+                    <i class="bi bi-arrow-clockwise"></i> New Search
+                </a>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card signal-{{ signal_class }} animate-in animate-in-delay-1">
+                    <span class="kpi-icon">
+                        {% if 'BUY' in signal %}📈{% elif 'SELL' in signal %}📉{% else %}⏸{% endif %}
+                    </span>
+                    <div class="kpi-label">Trading Signal</div>
+                    <div
+                        class="kpi-value {% if 'BUY' in signal %}text-green{% elif 'SELL' in signal %}text-red{% else %}text-gold{% endif %}">
+                        {{ signal }}
+                    </div>
+                    <div class="kpi-subtitle">Confidence: {{ confidence }}</div>
+                </div>
+
+                <div class="kpi-card accent-blue animate-in animate-in-delay-2">
+                    <span class="kpi-icon">🎯</span>
+                    <div class="kpi-label">Directional Accuracy</div>
+                    <div class="kpi-value text-cyan">{{ directional_accuracy }}%</div>
+                    <div class="kpi-subtitle">Up/Down predictions</div>
+                </div>
+
+                <div class="kpi-card accent-green animate-in animate-in-delay-3">
+                    <span class="kpi-icon">📊</span>
+                    <div class="kpi-label">Error Rate (MAPE)</div>
+                    <div class="kpi-value text-purple">{{ mape }}%</div>
+                    <div class="kpi-subtitle">Lower is better</div>
+                </div>
+
+                <div class="kpi-card accent-gold animate-in animate-in-delay-4">
+                    <span class="kpi-icon">🧠</span>
+                    <div class="kpi-label">R² Score</div>
+                    <div class="kpi-value text-gold">{{ r2 }}</div>
+                    <div class="kpi-subtitle">Model fit quality</div>
+                </div>
+            </div>
+
+            <!-- Adaptive Learning Banner -->
+            {% if learning_info %}
+            <div class="alert-pro {% if learning_info.has_history %}info{% else %}info{% endif %}"
+                style="margin-bottom: 24px; animation: fadeInUp 0.6s ease 0.5s forwards; opacity: 0;">
+                <span class="alert-icon">🧠</span>
+                <span class="alert-text">
+                    {% if learning_info.has_history %}
+                    <strong>Adaptive Learning Active</strong> — {{ learning_info.note }}
+                    <span style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 4px;">
+                        Win Rate: <strong
+                            style="color: {% if learning_info.win_rate >= 60 %}var(--accent-green){% elif learning_info.win_rate >= 40 %}var(--accent-gold){% else %}var(--accent-red){% endif %};">{{
+                            learning_info.win_rate }}%</strong>
+                        &nbsp;•&nbsp; Based on {{ learning_info.total_outcomes }} verified outcomes
+                        &nbsp;•&nbsp; Best model: <strong style="color: var(--accent-cyan);">{{ learning_info.best_model
+                            }}</strong>
+                    </span>
+                    {% else %}
+                    <strong>Building Knowledge Base</strong> — First prediction for {{ ticker }}. The model will learn
+                    from this outcome and adjust future signals automatically.
+                    {% endif %}
+                </span>
+            </div>
+            {% endif %}
+
+            <!-- Detailed Metrics -->
+            <div class="metrics-grid">
+                <div class="metric-tile">
+                    <div class="label">MSE</div>
+                    <div class="value">{{ mse }}</div>
+                    <div class="hint">Mean Squared Error</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="label">MAE</div>
+                    <div class="value">{{ mae }}</div>
+                    <div class="hint">Mean Absolute Error</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="label">RMSE</div>
+                    <div class="value">{{ rmse }}</div>
+                    <div class="hint">Root MSE</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="label">LSTM Accuracy</div>
+                    <div class="value" style="color: var(--accent-green);">{{ lstm_accuracy }}%</div>
+                    <div class="hint">Weight: {{ lstm_weight }}%</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="label">XGBoost Accuracy</div>
+                    <div class="value" style="color: var(--accent-red);">{{ xgb_accuracy }}%</div>
+                    <div class="hint">Weight: {{ xgb_weight }}%</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="label">Features</div>
+                    <div class="value" style="color: var(--accent-purple);">{{ num_features }}</div>
+                    <div class="hint">Technical Indicators</div>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3>
+                        <i class="bi bi-graph-up" style="color: var(--accent-cyan);"></i>
+                        {{ ticker }} — 30 Day AI Forecast
+                    </h3>
+                    <span style="color: var(--text-muted); font-size: 0.8rem;">
+                        <i class="bi bi-clock"></i> {{ now }}
+                    </span>
+                </div>
+                <div class="chart-body">
+                    {{ graph_html | safe }}
+                </div>
+            </div>
+
+            <!-- Model Architecture Info -->
+            <div class="model-grid">
+                <div class="model-card">
+                    <h4><i class="bi bi-cpu" style="color: var(--accent-cyan);"></i> LSTM Neural Network</h4>
+                    <p>Bidirectional LSTM with 128→64→32 units</p>
+                    <ul>
+                        <li>50 epochs with early stopping</li>
+                        <li>Layer normalization + L2 regularization</li>
+                        <li>Adaptive learning rate scheduling</li>
+                        <li>Huber loss for robustness</li>
+                        <li>Accuracy: {{ lstm_accuracy }}%</li>
+                    </ul>
+                </div>
+                <div class="model-card">
+                    <h4><i class="bi bi-diagram-3" style="color: var(--accent-green);"></i> XGBoost Ensemble</h4>
+                    <p>1000 trees with gradient boosting</p>
+                    <ul>
+                        <li>Depth-6 optimized trees</li>
+                        <li>L1/L2 regularization (alpha=0.1, lambda=1.0)</li>
+                        <li>Subsample=0.8, ColSample=0.8</li>
+                        <li>Early stopping on validation</li>
+                        <li>Accuracy: {{ xgb_accuracy }}%</li>
+                    </ul>
+                </div>
+                <div class="model-card">
+                    <h4><i class="bi bi-bar-chart" style="color: var(--accent-purple);"></i> Feature Engineering</h4>
+                    <p>{{ num_features }} advanced technical indicators</p>
+                    <ul>
+                        <li>RSI (7/14/21), MACD, Stochastic</li>
+                        <li>Bollinger, ATR, Williams %R</li>
+                        <li>OBV, Volume ratios, Volatility</li>
+                        <li>Multi-timeframe returns (2d–60d)</li>
+                        <li>{{ data_points }} data points processed</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Error State -->
+        {% if error %}
+        <section class="container-pro section-spacing">
+            <div class="alert-pro error">
+                <span class="alert-icon">⚠️</span>
+                <span class="alert-text">{{ error }}</span>
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Feature Highlights (shown when no results) -->
+        {% if not ticker and not error %}
+        <section class="container-pro section-spacing">
+            <div class="model-grid">
+                <div class="model-card" style="animation: fadeInUp 0.6s ease 0.2s forwards; opacity: 0;">
+                    <h4><i class="bi bi-lightning-charge" style="color: var(--accent-gold);"></i> High Accuracy</h4>
+                    <p>80%+ directional accuracy</p>
+                    <ul>
+                        <li>Walk-forward validation</li>
+                        <li>Dynamic ensemble weighting</li>
+                        <li>Bias-corrected predictions</li>
+                        <li>Out-of-sample tested</li>
+                    </ul>
+                </div>
+                <div class="model-card" style="animation: fadeInUp 0.6s ease 0.4s forwards; opacity: 0;">
+                    <h4><i class="bi bi-gear" style="color: var(--accent-cyan);"></i> Advanced Models</h4>
+                    <p>Industrial ML pipeline</p>
+                    <ul>
+                        <li>Bidirectional LSTM (3 layers)</li>
+                        <li>XGBoost (1000 optimized trees)</li>
+                        <li>Adaptive LR + Early Stopping</li>
+                        <li>Huber loss for outlier robustness</li>
+                    </ul>
+                </div>
+                <div class="model-card" style="animation: fadeInUp 0.6s ease 0.6s forwards; opacity: 0;">
+                    <h4><i class="bi bi-activity" style="color: var(--accent-green);"></i> Rich Features</h4>
+                    <p>35+ technical indicators</p>
+                    <ul>
+                        <li>RSI, MACD, Bollinger, ATR</li>
+                        <li>Stochastic, Williams %R, OBV</li>
+                        <li>Multi-timeframe momentum</li>
+                        <li>Candlestick pattern analysis</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+    </main>
 
     <!-- Footer -->
-    <footer class="bg-dark text-white text-center py-3">
-        <p>© 2025 Hybrid Stock Prediction | Built with❤️ & AI</p>
+    <footer class="footer-pro">
+        <div class="container-pro footer-content">
+            <div class="footer-brand">
+                ⚡ <span>QuantumTrade PRO</span>
+            </div>
+            <div class="footer-text">
+                Industrial-grade AI Stock Prediction • LSTM + XGBoost Ensemble • © 2026
+            </div>
+            <div class="footer-text" style="margin-top: 8px; font-size: 0.7rem;">
+                Disclaimer: For educational and research purposes only. Not financial advice.
+            </div>
+        </div>
     </footer>
 
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const themeToggle = document.createElement("button");
-            themeToggle.className = "theme-toggle";
-            themeToggle.innerText = "🌙 Dark Mode";
-            document.body.appendChild(themeToggle);
-        
-            themeToggle.addEventListener("click", function () {
-                document.body.classList.toggle("dark-mode");
-                if (document.body.classList.contains("dark-mode")) {
-                    themeToggle.innerText = "☀️ Light Mode";
-                    localStorage.setItem("theme", "dark");
-                } else {
-                    themeToggle.innerText = "🌙 Dark Mode";
-                    localStorage.setItem("theme", "light");
-                }
-            });
-        
-            // Load theme from localStorage
-            if (localStorage.getItem("theme") === "dark") {
-                document.body.classList.add("dark-mode");
-                themeToggle.innerText = "☀️ Light Mode";
-            }
+        // Ticker chip click
+        function setTicker(ticker) {
+            document.getElementById('tickerInput').value = ticker;
+            document.getElementById('tickerInput').focus();
+        }
+
+        // Form submission with loading state
+        document.getElementById('predictionForm').addEventListener('submit', function (e) {
+            const ticker = document.getElementById('tickerInput').value.toUpperCase().trim();
+            if (!ticker) { e.preventDefault(); return; }
+
+            document.getElementById('loadingTicker').textContent = ticker;
+            document.getElementById('loadingState').classList.add('active');
+            document.getElementById('predictCard').style.display = 'none';
+
+            const btn = document.getElementById('predictBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> PROCESSING...';
         });
-        </script>
-        </body>
+
+        // Auto uppercase
+        document.getElementById('tickerInput').addEventListener('input', function () {
+            this.value = this.value.toUpperCase();
+        });
+    </script>
+</body>
+
 </html>

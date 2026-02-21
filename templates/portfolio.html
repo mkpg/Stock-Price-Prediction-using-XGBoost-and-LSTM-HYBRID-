@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio — QuantumTrade Pro</title>
+    <meta name="description" content="Track your stock watchlist with AI-powered insights and trading signals.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+</head>
+
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar-pro">
+        <a href="/" class="logo">
+            <div class="logo-icon">⚡</div>
+            <span>QuantumTrade<span style="color: var(--accent-cyan); font-weight: 400;">PRO</span></span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="/">Predict</a></li>
+            <li><a href="/analytics">Analytics</a></li>
+            <li><a href="/portfolio" class="active">Portfolio</a></li>
+            <li><a href="/history">History</a></li>
+        </ul>
+        <div class="nav-actions">
+            {% if logged_in %}
+            <a href="/profile" class="nav-user-btn" title="Profile">
+                <i class="bi bi-person-circle"></i>
+                <span class="nav-username">{{ current_user.first_name }}</span>
+            </a>
+            <a href="/logout" class="nav-logout-btn" title="Logout">
+                <i class="bi bi-box-arrow-right"></i>
+            </a>
+            {% else %}
+            <a href="/login" class="nav-login-btn">Sign In</a>
+            {% endif %}
+            <button class="theme-btn" id="themeToggle"><i class="bi bi-moon-stars-fill"></i></button>
+            <button class="mobile-nav-btn" id="mobileNavBtn">
+                <i class="bi bi-list"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages container-pro">
+        {% for category, message in messages %}
+        <div class="flash-msg flash-{{ category }}">
+            <span>{{ message }}</span>
+            <button onclick="this.parentElement.remove()" class="flash-close">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+
+    <main class="main-wrapper">
+        <div class="container-pro section-spacing">
+            <!-- Header -->
+            <div class="section-header">
+                <h1><i class="bi bi-briefcase" style="color: var(--accent-cyan);"></i> My Watchlist</h1>
+                <p>Track your favorite stocks with AI-powered predictions and real-time signals</p>
+            </div>
+            <div class="section-divider"></div>
+
+            <!-- Portfolio Summary -->
+            <div class="summary-grid">
+                <div class="summary-card-pro animate-in animate-in-delay-1">
+                    <div class="label">Portfolio Value</div>
+                    <div class="value"
+                        style="color: {% if data.total_pnl >= 0 %}var(--accent-green){% else %}var(--accent-red){% endif %};">
+                        ${{ "{:,.2f}".format(data.total_value) }}
+                    </div>
+                    <div class="change"
+                        style="color: {% if data.total_pnl >= 0 %}var(--accent-green){% else %}var(--accent-red){% endif %};">
+                        <i class="bi bi-arrow-{% if data.total_pnl >= 0 %}up{% else %}down{% endif %}"></i>
+                        {{ "%+.2f"|format(data.total_pnl) }} ({{ data.total_pnl_pct }}%)
+                    </div>
+                </div>
+                <div class="summary-card-pro animate-in animate-in-delay-2">
+                    <div class="label">Total Return</div>
+                    <div class="value"
+                        style="color: {% if data.total_pnl_pct >= 0 %}var(--accent-cyan){% else %}var(--accent-red){% endif %};">
+                        {{ "%+.1f"|format(data.total_pnl_pct) }}%
+                    </div>
+                    <div class="change" style="color: var(--text-muted);">Since inception</div>
+                </div>
+                <div class="summary-card-pro animate-in animate-in-delay-3">
+                    <div class="label">Win Rate</div>
+                    <div class="value"
+                        style="color: {% if data.win_rate >= 50 %}var(--accent-green){% else %}var(--accent-red){% endif %};">
+                        {{ data.win_rate }}%
+                    </div>
+                    <div class="change" style="color: var(--text-muted);">{{ data.win_count }}/{{ data.win_count +
+                        data.loss_count }} positions</div>
+                </div>
+                <div class="summary-card-pro animate-in animate-in-delay-4">
+                    <div class="label">Avg P&L</div>
+                    <div class="value"
+                        style="color: {% if data.avg_pnl >= 0 %}var(--accent-gold){% else %}var(--accent-red){% endif %};">
+                        ${{ "{:,.2f}".format(data.avg_pnl) }}
+                    </div>
+                    <div class="change" style="color: var(--text-muted);">Per stock</div>
+                </div>
+            </div>
+
+            <!-- Add Stock -->
+            <div class="predict-card" style="max-width: 100%;">
+                <h2><i class="bi bi-plus-circle" style="color: var(--accent-green);"></i> Add to Watchlist</h2>
+                <div class="input-group-pro">
+                    <input type="text" id="addStockInput" class="predict-input"
+                        placeholder="Enter stock ticker (AAPL, MSFT, etc.)" maxlength="5" autocomplete="off"
+                        style="flex: 1;">
+                    <button class="predict-btn" id="addStockBtn" onclick="addStock()"
+                        style="background: var(--gradient-green);">
+                        <i class="bi bi-plus-lg"></i> ADD
+                    </button>
+                </div>
+                <div id="addStockStatus" style="margin-top: 8px; font-size: 0.85rem;"></div>
+            </div>
+
+            <!-- Watchlist Table -->
+            <div class="data-table-wrapper" style="margin-top: 24px;">
+                <div class="data-table-header">
+                    <h3><i class="bi bi-star" style="color: var(--accent-gold);"></i> My Stocks ({{ data.stock_count }})
+                    </h3>
+                    <span style="color: var(--text-muted); font-size: 0.8rem;">Prices from Polygon.io</span>
+                </div>
+                {% if data.stocks|length > 0 %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Current Price</th>
+                            <th>Entry Price</th>
+                            <th>P&L</th>
+                            <th>Signal</th>
+                            <th>Accuracy</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stock in data.stocks %}
+                        <tr id="row-{{ stock.ticker }}">
+                            <td class="ticker-cell">{{ stock.ticker }}</td>
+                            <td style="font-family: var(--font-mono); font-weight: 600;">${{
+                                "{:,.2f}".format(stock.current_price) }}</td>
+                            <td style="color: var(--text-muted);">${{ "{:,.2f}".format(stock.entry_price) }}</td>
+                            <td
+                                style="color: {% if stock.pnl >= 0 %}var(--accent-green){% else %}var(--accent-red){% endif %}; font-weight: 700;">
+                                {{ "%+.2f"|format(stock.pnl) }} ({{ "%+.1f"|format(stock.pnl_pct) }}%)
+                            </td>
+                            <td>
+                                {% if stock.signal != "—" %}
+                                <span class="badge-pro badge-{{ stock.signal_class }}">{{ stock.signal }}</span>
+                                {% else %}
+                                <span class="badge-pro"
+                                    style="background: rgba(255,255,255,0.05); color: var(--text-muted);">No
+                                    prediction</span>
+                                {% endif %}
+                            </td>
+                            <td
+                                style="font-family: var(--font-mono); font-weight: 700; color: {% if stock.accuracy >= 75 %}var(--accent-green){% elif stock.accuracy >= 60 %}var(--accent-cyan){% else %}var(--text-muted){% endif %};">
+                                {% if stock.accuracy > 0 %}{{ stock.accuracy }}%{% else %}—{% endif %}
+                            </td>
+                            <td style="display: flex; gap: 6px;">
+                                <a href="/" class="btn-outline"
+                                    style="padding: 4px 12px; font-size: 0.7rem;">Analyze</a>
+                                <button class="btn-outline"
+                                    style="padding: 4px 12px; font-size: 0.7rem; color: var(--accent-red); border-color: rgba(255,71,87,0.3); cursor: pointer;"
+                                    onclick="removeStock('{{ stock.ticker }}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+                    <i class="bi bi-star" style="font-size: 2.5rem; opacity: 0.3;"></i>
+                    <p style="margin-top: 12px;">Your watchlist is empty. Add stocks above to track them with live
+                        prices.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Recent Alerts -->
+            {% if data.alerts|length > 0 %}
+            <div class="data-table-wrapper">
+                <div class="data-table-header">
+                    <h3><i class="bi bi-bell" style="color: var(--accent-gold);"></i> Recent Alerts</h3>
+                </div>
+                <div class="alert-list">
+                    {% for alert in data.alerts %}
+                    <div class="alert-item-pro">
+                        <div class="alert-item-info">
+                            <h4 style="display: flex; align-items: center; gap: 8px;">
+                                <span style="color: var(--accent-{{ alert.color }});">{{ alert.icon }}</span>
+                                {{ alert.ticker }} — {{ alert.signal }} Signal
+                            </h4>
+                            <p>{{ alert.description }}</p>
+                        </div>
+                        <span class="alert-item-time">{{ alert.time }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <footer class="footer-pro">
+        <div class="container-pro footer-content">
+            <div class="footer-brand">⚡ <span>QuantumTrade PRO</span></div>
+            <div class="footer-text">Industrial-grade AI Stock Prediction • © 2026</div>
+        </div>
+    </footer>
+
+    <script>
+        // ===== Add Stock to Watchlist (REAL MongoDB) =====
+        async function addStock() {
+            const input = document.getElementById('addStockInput');
+            const status = document.getElementById('addStockStatus');
+            const btn = document.getElementById('addStockBtn');
+            const ticker = input.value.toUpperCase().trim();
+
+            if (!ticker) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> ADDING...';
+            status.innerHTML = '<span style="color: var(--accent-cyan);"><i class="bi bi-arrow-repeat spin"></i> Fetching live price for ' + ticker + '...</span>';
+
+            try {
+                const resp = await fetch('/api/watchlist/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticker: ticker })
+                });
+                const data = await resp.json();
+
+                if (data.success) {
+                    status.innerHTML = '<span style="color: var(--accent-green);"><i class="bi bi-check-circle"></i> Added ' + ticker + ' at $' + data.entry_price.toFixed(2) + '</span>';
+                    input.value = '';
+                    // Reload page to show updated watchlist
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    status.innerHTML = '<span style="color: var(--accent-red);"><i class="bi bi-x-circle"></i> ' + (data.error || 'Failed to add') + '</span>';
+                }
+            } catch (e) {
+                status.innerHTML = '<span style="color: var(--accent-red);"><i class="bi bi-x-circle"></i> Network error</span>';
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-plus-lg"></i> ADD';
+        }
+
+        // ===== Remove Stock from Watchlist =====
+        async function removeStock(ticker) {
+            if (!confirm('Remove ' + ticker + ' from watchlist?')) return;
+
+            try {
+                const resp = await fetch('/api/watchlist/remove', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticker: ticker })
+                });
+                const data = await resp.json();
+
+                if (data.success) {
+                    const row = document.getElementById('row-' + ticker);
+                    if (row) {
+                        row.style.transition = 'opacity 0.3s';
+                        row.style.opacity = '0';
+                        setTimeout(() => location.reload(), 400);
+                    }
+                }
+            } catch (e) {
+                alert('Failed to remove ' + ticker);
+            }
+        }
+
+        // Enter key to add
+        document.getElementById('addStockInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') addStock();
+        });
+
+        // Auto uppercase
+        document.getElementById('addStockInput').addEventListener('input', function () {
+            this.value = this.value.toUpperCase();
+        });
+    </script>
+
+    <style>
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spin {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+    </style>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>

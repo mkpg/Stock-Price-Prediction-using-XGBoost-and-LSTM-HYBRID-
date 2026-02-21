@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile — QuantumTrade PRO</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+</head>
+
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar-pro">
+        <a href="/" class="logo">
+            <div class="logo-icon">⚡</div>
+            <span>QuantumTrade<span style="color: var(--accent-cyan); font-weight: 400;">PRO</span></span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="/">Predict</a></li>
+            <li><a href="/analytics">Analytics</a></li>
+            <li><a href="/portfolio">Portfolio</a></li>
+            <li><a href="/history">History</a></li>
+        </ul>
+        <div class="nav-actions">
+            {% if logged_in %}
+            <a href="/profile" class="nav-user-btn active" title="Profile">
+                <i class="bi bi-person-circle"></i>
+                <span class="nav-username">{{ current_user.first_name }}</span>
+            </a>
+            <a href="/logout" class="nav-logout-btn" title="Logout">
+                <i class="bi bi-box-arrow-right"></i>
+            </a>
+            {% else %}
+            <a href="/login" class="nav-login-btn">Sign In</a>
+            {% endif %}
+            <button class="theme-btn" id="themeToggle"><i class="bi bi-moon-stars-fill"></i></button>
+        </div>
+    </nav>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages container-pro">
+        {% for category, message in messages %}
+        <div class="flash-msg flash-{{ category }}">
+            <span>{{ message }}</span>
+            <button onclick="this.parentElement.remove()" class="flash-close">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <main class="auth-wrapper">
+        <div class="auth-card auth-card-wide">
+            <div class="auth-header">
+                <div class="auth-icon">
+                    <i class="bi bi-person-gear"></i>
+                </div>
+                <h1>Edit Profile</h1>
+                <p>Update your personal information and trading settings</p>
+            </div>
+
+            <form method="POST" action="{{ url_for('edit_profile') }}" class="auth-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="first_name">
+                            <i class="bi bi-person"></i> First Name
+                        </label>
+                        <input type="text" id="first_name" name="first_name" value="{{ user.first_name }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="last_name">
+                            <i class="bi bi-person"></i> Last Name
+                        </label>
+                        <input type="text" id="last_name" name="last_name" value="{{ user.last_name }}" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">
+                        <i class="bi bi-envelope"></i> Email Address
+                    </label>
+                    <input type="email" id="email" name="email" value="{{ user.email }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">
+                        <i class="bi bi-phone"></i> Phone Number
+                    </label>
+                    <input type="tel" id="phone" name="phone" value="{{ user.phone }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="position_size">
+                        <i class="bi bi-cash-stack"></i> Base Position Size (USD)
+                        <span class="label-hint">Used for all P&L calculations</span>
+                    </label>
+                    <input type="number" id="position_size" name="position_size" value="{{ user.position_size }}"
+                        min="100" max="10000000" step="100">
+                    <small class="form-hint">Current default: ${{ "{:,.0f}".format(user.position_size) }}</small>
+                </div>
+
+                <div class="auth-actions-row">
+                    <a href="/profile" class="btn-outline-pro">Cancel</a>
+                    <button type="submit" class="auth-submit-btn">
+                        <span class="btn-text">Save Changes</span>
+                        <i class="bi bi-check-lg"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>

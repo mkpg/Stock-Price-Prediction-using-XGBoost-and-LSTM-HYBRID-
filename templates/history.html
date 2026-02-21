@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History — QuantumTrade Pro</title>
+    <meta name="description"
+        content="Review all past AI predictions and their outcomes with detailed performance logs.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+</head>
+
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar-pro">
+        <a href="/" class="logo">
+            <div class="logo-icon">⚡</div>
+            <span>QuantumTrade<span style="color: var(--accent-cyan); font-weight: 400;">PRO</span></span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="/">Predict</a></li>
+            <li><a href="/analytics">Analytics</a></li>
+            <li><a href="/portfolio">Portfolio</a></li>
+            <li><a href="/history" class="active">History</a></li>
+        </ul>
+        <div class="nav-actions">
+            {% if logged_in %}
+            <a href="/profile" class="nav-user-btn" title="Profile">
+                <i class="bi bi-person-circle"></i>
+                <span class="nav-username">{{ current_user.first_name }}</span>
+            </a>
+            <a href="/logout" class="nav-logout-btn" title="Logout">
+                <i class="bi bi-box-arrow-right"></i>
+            </a>
+            {% else %}
+            <a href="/login" class="nav-login-btn">Sign In</a>
+            {% endif %}
+            <button class="theme-btn" id="themeToggle"><i class="bi bi-moon-stars-fill"></i></button>
+            <button class="mobile-nav-btn" id="mobileNavBtn">
+                <i class="bi bi-list"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages container-pro">
+        {% for category, message in messages %}
+        <div class="flash-msg flash-{{ category }}">
+            <span>{{ message }}</span>
+            <button onclick="this.parentElement.remove()" class="flash-close">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+
+    <main class="main-wrapper">
+        <div class="container-pro section-spacing">
+            <!-- Header -->
+            <div class="section-header">
+                <h1><i class="bi bi-clock-history" style="color: var(--accent-cyan);"></i> Prediction History</h1>
+                <p>Review all past predictions, their outcomes, and accumulated performance</p>
+            </div>
+            <div class="section-divider"></div>
+
+            <!-- Filters (FUNCTIONAL) -->
+            <form class="filter-bar" method="GET" action="/history" id="filterForm">
+                <div class="filter-group">
+                    <label>Signal Type</label>
+                    <select name="signal" onchange="document.getElementById('filterForm').submit();">
+                        <option value="all" {% if current_signal=='all' %}selected{% endif %}>All Signals</option>
+                        <option value="STRONG BUY" {% if current_signal=='STRONG BUY' %}selected{% endif %}>STRONG BUY
+                        </option>
+                        <option value="BUY" {% if current_signal=='BUY' %}selected{% endif %}>BUY</option>
+                        <option value="HOLD" {% if current_signal=='HOLD' %}selected{% endif %}>HOLD</option>
+                        <option value="SELL" {% if current_signal=='SELL' %}selected{% endif %}>SELL</option>
+                        <option value="STRONG SELL" {% if current_signal=='STRONG SELL' %}selected{% endif %}>STRONG
+                            SELL</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Min Accuracy</label>
+                    <select name="min_accuracy" onchange="document.getElementById('filterForm').submit();">
+                        <option value="" {% if not current_accuracy %}selected{% endif %}>Any</option>
+                        <option value="70" {% if current_accuracy=='70' %}selected{% endif %}>70%+</option>
+                        <option value="80" {% if current_accuracy=='80' %}selected{% endif %}>80%+</option>
+                        <option value="85" {% if current_accuracy=='85' %}selected{% endif %}>85%+</option>
+                        <option value="90" {% if current_accuracy=='90' %}selected{% endif %}>90%+</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Outcome</label>
+                    <select name="outcome" onchange="document.getElementById('filterForm').submit();">
+                        <option value="all" {% if current_outcome=='all' %}selected{% endif %}>All</option>
+                        <option value="correct" {% if current_outcome=='correct' %}selected{% endif %}>Correct</option>
+                        <option value="incorrect" {% if current_outcome=='incorrect' %}selected{% endif %}>Incorrect
+                        </option>
+                        <option value="pending" {% if current_outcome=='pending' %}selected{% endif %}>Pending</option>
+                    </select>
+                </div>
+                <button type="submit" class="filter-btn"><i class="bi bi-funnel"></i> Filter</button>
+            </form>
+
+            {% if data.total == 0 and current_signal == 'all' and not current_accuracy and current_outcome == 'all' %}
+            <!-- Empty State -->
+            <div class="predict-card" style="text-align: center; max-width: 600px; margin: 60px auto;">
+                <i class="bi bi-clock-history" style="font-size: 3rem; color: var(--accent-cyan); opacity: 0.5;"></i>
+                <h2 style="margin-top: 16px; color: var(--text-primary);">No Prediction History</h2>
+                <p style="color: var(--text-muted); margin-bottom: 24px;">
+                    Your predictions will appear here once you start using the
+                    <a href="/" style="color: var(--accent-cyan);">Predict page</a>.
+                    Every prediction is automatically stored with full metrics.
+                </p>
+                <a href="/" class="predict-btn" style="display: inline-flex; text-decoration: none;">
+                    <i class="bi bi-play-circle-fill"></i> Make Your First Prediction
+                </a>
+            </div>
+            {% else %}
+
+            <!-- History Table -->
+            <div class="data-table-wrapper">
+                <div class="data-table-header">
+                    <h3><i class="bi bi-list-ul" style="color: var(--accent-cyan);"></i> All Predictions ({{ data.total
+                        }})</h3>
+                    <span style="color: var(--text-muted); font-size: 0.8rem;">Page {{ data.page }} of {{
+                        data.total_pages }}</span>
+                </div>
+
+                {% if data.predictions|length > 0 %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Date</th>
+                            <th>Ticker</th>
+                            <th>Signal</th>
+                            <th>Accuracy</th>
+                            <th>MAPE</th>
+                            <th>Outcome</th>
+                            <th>P&L</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pred in data.predictions %}
+                        {% set row_num = data.total - ((data.page - 1) * data.per_page) - loop.index0 %}
+                        <tr>
+                            <td style="color: var(--text-muted); font-family: var(--font-mono); font-size: 0.8rem;">
+                                #{{ row_num }}
+                            </td>
+                            <td style="color: var(--text-muted);">{{ pred.created_at_fmt }}</td>
+                            <td class="ticker-cell">{{ pred.ticker }}</td>
+                            <td>
+                                <span class="badge-pro badge-{{ pred.signal_class }}">{{ pred.signal }}</span>
+                            </td>
+                            <td
+                                style="font-family: var(--font-mono); font-weight: 700; color: {% if pred.directional_accuracy >= 75 %}var(--accent-green){% elif pred.directional_accuracy >= 60 %}var(--accent-cyan){% else %}var(--accent-red){% endif %};">
+                                {{ pred.directional_accuracy }}%
+                            </td>
+                            <td style="font-family: var(--font-mono);">{{ pred.mape }}%</td>
+                            <td>
+                                {% if pred.outcome == "correct" %}
+                                <span class="badge-pro badge-correct">✓ Correct</span>
+                                {% elif pred.outcome == "incorrect" %}
+                                <span class="badge-pro badge-incorrect">✗ Incorrect</span>
+                                {% else %}
+                                <span class="badge-pro"
+                                    style="background: rgba(255,215,0,0.12); color: var(--accent-gold);">⏳
+                                    Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if pred.pnl is not none and pred.pnl != 0 %}
+                                <span
+                                    style="color: {% if pred.pnl >= 0 %}var(--accent-green){% else %}var(--accent-red){% endif %}; font-weight: 700; font-family: var(--font-mono);">
+                                    {{ "%+,.0f"|format(pred.pnl) }}
+                                </span>
+                                {% elif pred.outcome == "correct" or pred.outcome == "incorrect" %}
+                                <span style="color: var(--text-muted); font-family: var(--font-mono);">$0</span>
+                                {% else %}
+                                <span style="color: var(--text-muted); font-family: var(--font-mono);">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                    No predictions match your filters. Try adjusting the criteria.
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Pagination (FUNCTIONAL) -->
+            {% if data.total_pages > 1 %}
+            <div class="pagination-pro">
+                {% if data.page > 1 %}
+                <a
+                    href="/history?page={{ data.page - 1 }}&signal={{ current_signal }}&min_accuracy={{ current_accuracy }}&outcome={{ current_outcome }}">
+                    <button>← Prev</button>
+                </a>
+                {% endif %}
+
+                {% for p in range(1, data.total_pages + 1) %}
+                {% if p == data.page %}
+                <button class="active">{{ p }}</button>
+                {% elif p <= 3 or p>= data.total_pages - 1 or (p >= data.page - 1 and p <= data.page + 1) %} <a
+                        href="/history?page={{ p }}&signal={{ current_signal }}&min_accuracy={{ current_accuracy }}&outcome={{ current_outcome }}">
+                        <button>{{ p }}</button>
+                        </a>
+                        {% elif p == 4 or p == data.total_pages - 2 %}
+                        <button disabled>...</button>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if data.page < data.total_pages %} <a
+                            href="/history?page={{ data.page + 1 }}&signal={{ current_signal }}&min_accuracy={{ current_accuracy }}&outcome={{ current_outcome }}">
+                            <button>Next →</button>
+                            </a>
+                            {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Performance Stats -->
+            <div class="stat-grid" style="margin-top: 40px;">
+                <div class="stat-card-pro">
+                    <div class="stat-value" style="color: var(--accent-cyan);">{{ "{:,}".format(data.summary.total) }}
+                    </div>
+                    <div class="stat-label">Total Predictions</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">
+                        {{ data.summary.correct }} correct, {{ data.summary.incorrect }} incorrect
+                    </div>
+                </div>
+                <div class="stat-card-pro">
+                    <div class="stat-value" style="color: var(--accent-green);">{{ data.summary.avg_accuracy }}%</div>
+                    <div class="stat-label">Overall Accuracy</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">
+                        Directional accuracy average
+                    </div>
+                </div>
+                <div class="stat-card-pro">
+                    <div class="stat-value"
+                        style="color: {% if data.summary.total_pnl >= 0 %}var(--accent-green){% else %}var(--accent-red){% endif %};">
+                        ${{ "{:,.0f}".format(data.summary.total_pnl) }}
+                    </div>
+                    <div class="stat-label">Total P&L</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">
+                        Simulated $10K positions
+                    </div>
+                </div>
+                <div class="stat-card-pro">
+                    <div class="stat-value" style="color: var(--accent-gold);">{{ data.summary.avg_mape }}%</div>
+                    <div class="stat-label">Avg MAPE</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">Across all predictions
+                    </div>
+                </div>
+            </div>
+
+            {% endif %}
+        </div>
+    </main>
+
+    <footer class="footer-pro">
+        <div class="container-pro footer-content">
+            <div class="footer-brand">⚡ <span>QuantumTrade PRO</span></div>
+            <div class="footer-text">Industrial-grade AI Stock Prediction • © 2026</div>
+        </div>
+    </footer>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile — QuantumTrade PRO</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+</head>
+
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar-pro">
+        <a href="/" class="logo">
+            <div class="logo-icon">⚡</div>
+            <span>QuantumTrade<span style="color: var(--accent-cyan); font-weight: 400;">PRO</span></span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="/">Predict</a></li>
+            <li><a href="/analytics">Analytics</a></li>
+            <li><a href="/portfolio">Portfolio</a></li>
+            <li><a href="/history">History</a></li>
+        </ul>
+        <div class="nav-actions">
+            {% if logged_in %}
+            <a href="/profile" class="nav-user-btn active" title="Profile">
+                <i class="bi bi-person-circle"></i>
+                <span class="nav-username">{{ current_user.first_name }}</span>
+            </a>
+            <a href="/logout" class="nav-logout-btn" title="Logout">
+                <i class="bi bi-box-arrow-right"></i>
+            </a>
+            {% else %}
+            <a href="/login" class="nav-login-btn">Sign In</a>
+            {% endif %}
+            <button class="theme-btn" id="themeToggle"><i class="bi bi-moon-stars-fill"></i></button>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages container-pro">
+        {% for category, message in messages %}
+        <div class="flash-msg flash-{{ category }}">
+            <span>{{ message }}</span>
+            <button onclick="this.parentElement.remove()" class="flash-close">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <main class="main-wrapper">
+        <div class="container-pro section-spacing">
+            <div class="profile-layout">
+                <!-- Sidebar Info -->
+                <aside class="profile-sidebar">
+                    <div class="glass-card profile-card">
+                        <div class="profile-avatar">
+                            <i class="bi bi-person-circle"></i>
+                        </div>
+                        <h2>{{ user.first_name }} {{ user.last_name }}</h2>
+                        <p class="username">@{{ user.username }}</p>
+                        <div class="profile-meta">
+                            <div class="meta-item">
+                                <i class="bi bi-envelope"></i>
+                                <span>{{ user.email }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="bi bi-phone"></i>
+                                <span>{{ user.phone }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="bi bi-calendar3"></i>
+                                <span>Joined {{ user.created_at.strftime('%b %d, %Y') }}</span>
+                            </div>
+                        </div>
+                        <div class="profile-actions">
+                            <a href="/edit_profile" class="btn-primary-pro">
+                                <i class="bi bi-pencil-square"></i> Edit Profile
+                            </a>
+                            <a href="/change_password" class="btn-outline-pro">
+                                <i class="bi bi-key"></i> Change Password
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="glass-card pnl-config-card mt-4">
+                        <h3><i class="bi bi-gear"></i> Trading Setup</h3>
+                        <div class="pnl-setting">
+                            <label>Base Position Size</label>
+                            <div class="setting-value">${{ "{:,.0f}".format(user.position_size) }}</div>
+                            <p class="setting-hint">This amount is used as the base for all P&L calculations in your
+                                history.</p>
+                        </div>
+                        <a href="/edit_profile" class="btn-link">Update Position Size</a>
+                    </div>
+                </aside>
+
+                <!-- Stats and Content -->
+                <div class="profile-main">
+                    <div class="stats-grid-pro">
+                        <div class="stat-card-pro">
+                            <div class="stat-icon"
+                                style="background: rgba(var(--accent-cyan-rgb), 0.1); color: var(--accent-cyan);">
+                                <i class="bi bi-activity"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Total Predictions</span>
+                                <span class="stat-value">{{ stats.total_predictions }}</span>
+                            </div>
+                        </div>
+                        <div class="stat-card-pro">
+                            <div class="stat-icon"
+                                style="background: rgba(var(--success-rgb), 0.1); color: var(--success);">
+                                <i class="bi bi-check-circle"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Win Rate</span>
+                                <span class="stat-value">{{ stats.win_rate }}%</span>
+                            </div>
+                        </div>
+                        <div class="stat-card-pro">
+                            <div class="stat-icon"
+                                style="background: rgba(var(--accent-cyan-rgb), 0.1); color: var(--accent-cyan);">
+                                <i class="bi bi-cash-stack"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Total P&L</span>
+                                <span
+                                    class="stat-value {% if stats.total_pnl >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {% if stats.total_pnl >= 0 %}+{% endif %}${{ "{:,.2f}".format(stats.total_pnl) }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="stat-card-pro">
+                            <div class="stat-icon"
+                                style="background: rgba(var(--accent-cyan-rgb), 0.1); color: var(--accent-cyan);">
+                                <i class="bi bi-bullseye"></i>
+                            </div>
+                            <div class="stat-info">
+                                <span class="stat-label">Avg Accuracy</span>
+                                <span class="stat-value">{{ stats.avg_accuracy }}%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card mt-4">
+                        <div class="card-header-pro">
+                            <h3><i class="bi bi-shield-check"></i> Security & Recovery</h3>
+                        </div>
+                        <div class="security-card-body">
+                            <p class="text-muted small mb-3">Your 12-number recovery phrase is required to reset your
+                                password if you lose it. <strong>Never share these numbers!</strong></p>
+
+                            <div id="phraseSection" class="hidden-phrase">
+                                <div class="mnemonic-grid-small">
+                                    {% for num in user.recovery_phrase.split('-') %}
+                                    <div class="mnemonic-item-small">
+                                        <span class="ms-index">{{ loop.index }}</span>
+                                        <span class="ms-value">{{ num }}</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <button onclick="copyPhrase()" class="btn-link-pro mt-3"><i class="bi bi-clipboard"></i>
+                                    Copy All</button>
+                            </div>
+
+                            <button id="showPhraseBtn" class="btn-outline-pro w-100" onclick="togglePhrase()">
+                                <i class="bi bi-eye"></i> Show Recovery Phrase
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="glass-card mt-4">
+                        <div class="card-header-pro">
+                            <h3><i class="bi bi-clock-history"></i> Recent Activity</h3>
+                            <a href="/history" class="btn-link">View All History</a>
+                        </div>
+                        <div class="activity-list">
+                            {% if stats.total_predictions > 0 %}
+                            <p class="text-muted text-center py-4">Detailed activity logging is available in the <a
+                                    href="/history">History</a> tab.</p>
+                            {% else %}
+                            <div class="empty-state">
+                                <i class="bi bi-info-circle"></i>
+                                <p>No predictions yet. Start by analyzing a stock!</p>
+                                <a href="/" class="btn-primary-pro">Start Predicting</a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        function togglePhrase() {
+            const section = document.getElementById('phraseSection');
+            const btn = document.getElementById('showPhraseBtn');
+            if (section.style.display === 'block') {
+                section.style.display = 'none';
+                btn.innerHTML = '<i class="bi bi-eye"></i> Show Recovery Phrase';
+            } else {
+                section.style.display = 'block';
+                btn.innerHTML = '<i class="bi bi-eye-slash"></i> Hide Recovery Phrase';
+            }
+        }
+
+        function copyPhrase() {
+            const phrase = "{{ user.recovery_phrase }}";
+            navigator.clipboard.writeText(phrase);
+            alert("Recovery phrase copied!");
+        }
+    </script>
+</body>
+
+</html>

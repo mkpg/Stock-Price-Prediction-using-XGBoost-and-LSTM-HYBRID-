@@ -1,243 +1,202 @@
-<!-- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Prediction Dashboard</title>
+    <title>Dashboard — QuantumTrade Pro</title>
+    <meta name="description" content="Advanced stock prediction dashboard with LSTM + XGBoost ensemble analysis.">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 </head>
-<body class="light-mode">
-    <div class="d-flex">
-        <div class="sidebar bg-dark text-white p-3" id="sidebar">
-            <button class="btn btn-light close-btn" id="close-sidebar">✖</button>
-            <h4>📊 Quick Links</h4>
-            <ul class="nav flex-column">
-                <li class="nav-item">
-                    <a href="https://finance.yahoo.com" target="_blank" class="nav-link text-white">📰 News</a>
-                </li>
-                <li class="nav-item">
-                    <a href="https://groww.com" target="_blank" class="nav-link text-white">💹 Trade</a>
-                </li>
-                <li class="nav-item">
-                    <a href="https://tradingview.com" target="_blank" class="nav-link text-white">📉 Simulate</a>
-                </li>
-            </ul>
+
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar-pro">
+        <a href="/" class="logo">
+            <div class="logo-icon">⚡</div>
+            <span>QuantumTrade<span style="color: var(--accent-cyan); font-weight: 400;">PRO</span></span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="/">Predict</a></li>
+            <li><a href="/analytics">Analytics</a></li>
+            <li><a href="/portfolio">Portfolio</a></li>
+            <li><a href="/history">History</a></li>
+        </ul>
+        <div class="nav-actions">
+            <button class="theme-btn" id="themeToggle" title="Toggle theme">
+                <i class="bi bi-moon-stars-fill"></i>
+            </button>
         </div>
+    </nav>
 
-        <div class="container mt-5" id="main-content">
-            <div class="d-flex justify-content-between align-items-center">
-                <button class="btn btn-dark" id="open-sidebar">☰</button>
-                <h1>📈 Stock Prediction Dashboard</h1>
-                <button class="btn btn-outline-dark" id="theme-toggle">🌙 Dark Mode</button>
+    <main class="main-wrapper">
+        <div class="container-pro section-spacing">
+            <!-- Dashboard Header -->
+            <div class="section-header">
+                <h1><i class="bi bi-speedometer2" style="color: var(--accent-cyan);"></i> Prediction Dashboard</h1>
+                <p>Enter a stock ticker to generate AI-powered predictions</p>
+            </div>
+            <div class="section-divider"></div>
+
+            <!-- Prediction Form -->
+            <div class="predict-card" id="predictCard">
+                <h2><i class="bi bi-search" style="color: var(--accent-cyan);"></i> Stock Analysis</h2>
+                <form id="predictionForm" method="POST" action="/predict" class="predict-form">
+                    <input type="text" id="tickerInput" name="ticker" class="predict-input"
+                        placeholder="Enter ticker symbol (e.g. AAPL)" maxlength="5" autocomplete="off" required>
+                    <button class="predict-btn" type="submit" id="predictBtn">
+                        <i class="bi bi-play-circle-fill"></i>
+                        PREDICT
+                    </button>
+                </form>
+                <div class="ticker-chips">
+                    <span class="ticker-chip" onclick="setTicker('AAPL')">AAPL</span>
+                    <span class="ticker-chip" onclick="setTicker('MSFT')">MSFT</span>
+                    <span class="ticker-chip" onclick="setTicker('TSLA')">TSLA</span>
+                    <span class="ticker-chip" onclick="setTicker('NVDA')">NVDA</span>
+                    <span class="ticker-chip" onclick="setTicker('SPY')">SPY</span>
+                </div>
             </div>
 
-            <form id="prediction-form" action="/predict" method="POST" class="mt-4">
-                <div class="input-group mb-3">
-                    <input type="text" name="ticker" class="form-control" placeholder="Enter Stock Symbol (e.g., AAPL)" required>
-                    <button class="btn btn-primary" type="submit">Predict</button>
+            <!-- Loading State -->
+            <div class="loading-overlay" id="loadingState">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Analyzing <span id="loadingTicker"
+                        style="color: var(--accent-cyan); font-family: var(--font-mono);">...</span></div>
+                <div class="loading-subtext">Training LSTM & XGBoost models • Computing 35+ technical indicators</div>
+                <div class="loading-progress">
+                    <div class="loading-progress-bar"></div>
                 </div>
-            </form>
-
-            <div id="loading" class="text-center mt-4" style="display: none;">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-2">Fetching stock predictions...</p>
             </div>
 
+            <!-- Error Alert -->
+            {% if error %}
+            <div class="alert-pro error">
+                <span class="alert-icon">⚠️</span>
+                <span class="alert-text">{{ error }}</span>
+            </div>
+            {% endif %}
+
+            <!-- Results -->
             {% if ticker %}
-            <div class="card mt-4">
-                <div class="card-header text-white bg-success">
-                    <h3 class="text-center">Prediction Results for {{ ticker }}</h3>
+            <div class="results-header animate-in">
+                <h2><span class="ticker-badge">{{ ticker }}</span> — Analysis Complete</h2>
+                <a href="/dashboard" class="btn-outline"><i class="bi bi-arrow-clockwise"></i> New Search</a>
+            </div>
+
+            <!-- Signal & Accuracy -->
+            <div class="kpi-grid animate-in">
+                <div class="kpi-card signal-{{ signal_class }}">
+                    <span class="kpi-icon">{% if 'BUY' in signal %}📈{% elif 'SELL' in signal %}📉{% else %}⏸{% endif
+                        %}</span>
+                    <div class="kpi-label">Signal</div>
+                    <div
+                        class="kpi-value {% if 'BUY' in signal %}text-green{% elif 'SELL' in signal %}text-red{% else %}text-gold{% endif %}">
+                        {{ signal }}</div>
+                    <div class="kpi-subtitle">{{ confidence }} confidence</div>
                 </div>
-                <div class="card-body">
-                    <h5 class="text-center">
-                        <strong>📊 Buy/Sell Signal:</strong> 
-                        <span class="badge {% if signal == 'BUY' %} bg-success {% elif signal == 'SELL' %} bg-danger {% else %} bg-warning {% endif %}"> 
-                            {{ signal }}
-                        </span>
-                    </h5>
-                    <div class="row text-center mt-3">
-                        <div class="col-md-3"><p><strong>MSE:</strong> {{ mse }}</p></div>
-                        <div class="col-md-3"><p><strong>MAE:</strong> {{ mae }}</p></div>
-                        <div class="col-md-3"><p><strong>RMSE:</strong> {{ rmse }}</p></div>
-                        <div class="col-md-3"><p><strong>MAPE:</strong> {{ mape }}%</p></div>
-                    </div>
-                    <div class="mt-4">
-                        {{ graph_html | safe }}
-                    </div>
+
+                <div class="kpi-card accent-blue">
+                    <span class="kpi-icon">🎯</span>
+                    <div class="kpi-label">Accuracy</div>
+                    <div class="kpi-value text-cyan">{{ directional_accuracy }}%</div>
+                    <div class="kpi-subtitle">Directional</div>
+                </div>
+
+                <div class="kpi-card accent-green">
+                    <span class="kpi-icon">📊</span>
+                    <div class="kpi-label">MAPE</div>
+                    <div class="kpi-value text-purple">{{ mape }}%</div>
+                    <div class="kpi-subtitle">Error rate</div>
+                </div>
+
+                <div class="kpi-card accent-gold">
+                    <span class="kpi-icon">🧠</span>
+                    <div class="kpi-label">R²</div>
+                    <div class="kpi-value text-gold">{{ r2 }}</div>
+                    <div class="kpi-subtitle">Model fit</div>
+                </div>
+            </div>
+
+            <!-- Metrics -->
+            <div class="metrics-grid animate-in">
+                <div class="metric-tile">
+                    <div class="label">MSE</div>
+                    <div class="value">{{ mse }}</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="label">MAE</div>
+                    <div class="value">{{ mae }}</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="label">RMSE</div>
+                    <div class="value">{{ rmse }}</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="label">LSTM</div>
+                    <div class="value" style="color: var(--accent-green);">{{ lstm_accuracy }}%</div>
+                    <div class="hint">Weight: {{ lstm_weight }}%</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="label">XGBoost</div>
+                    <div class="value" style="color: var(--accent-red);">{{ xgb_accuracy }}%</div>
+                    <div class="hint">Weight: {{ xgb_weight }}%</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="label">Features</div>
+                    <div class="value" style="color: var(--accent-purple);">{{ num_features }}</div>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="chart-card animate-in">
+                <div class="chart-header">
+                    <h3><i class="bi bi-graph-up" style="color: var(--accent-cyan);"></i> {{ ticker }} — AI Forecast
+                    </h3>
+                    <span style="color: var(--text-muted); font-size: 0.8rem;">{{ now }}</span>
+                </div>
+                <div class="chart-body">
+                    {{ graph_html | safe }}
                 </div>
             </div>
             {% endif %}
         </div>
-    </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer-pro">
+        <div class="container-pro footer-content">
+            <div class="footer-brand">⚡ <span>QuantumTrade PRO</span></div>
+            <div class="footer-text">Industrial-grade AI Stock Prediction • © 2026</div>
+        </div>
+    </footer>
 
     <script>
-        const themeToggle = document.getElementById("theme-toggle");
-        const body = document.body;
-        const form = document.getElementById("prediction-form");
-        const loading = document.getElementById("loading");
-        const sidebar = document.getElementById("sidebar");
-        const openSidebar = document.getElementById("open-sidebar");
-        const closeSidebar = document.getElementById("close-sidebar");
-        const mainContent = document.getElementById("main-content");
-
-        if (localStorage.getItem("theme") === "dark") {
-            body.classList.add("dark-mode");
-            themeToggle.innerText = "☀️ Light Mode";
+        function setTicker(t) {
+            document.getElementById('tickerInput').value = t;
+            document.getElementById('tickerInput').focus();
         }
 
-        themeToggle.addEventListener("click", () => {
-            body.classList.toggle("dark-mode");
-            localStorage.setItem("theme", body.classList.contains("dark-mode") ? "dark" : "light");
-            themeToggle.innerText = body.classList.contains("dark-mode") ? "☀️ Light Mode" : "🌙 Dark Mode";
+        document.getElementById('predictionForm').addEventListener('submit', function (e) {
+            const ticker = document.getElementById('tickerInput').value.toUpperCase().trim();
+            if (!ticker) { e.preventDefault(); return; }
+            document.getElementById('loadingTicker').textContent = ticker;
+            document.getElementById('loadingState').classList.add('active');
+            document.getElementById('predictCard').style.display = 'none';
+            const btn = document.getElementById('predictBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> PROCESSING...';
         });
 
-        form.addEventListener("submit", () => {
-            loading.style.display = "block";
-        });
-
-        openSidebar.addEventListener("click", () => {
-            sidebar.classList.add("active");
-            mainContent.classList.add("shifted");
-        });
-
-        closeSidebar.addEventListener("click", () => {
-            sidebar.classList.remove("active");
-            mainContent.classList.remove("shifted");
+        document.getElementById('tickerInput').addEventListener('input', function () {
+            this.value = this.value.toUpperCase();
         });
     </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
-</html> -->
 
-
-<!-- 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Prediction Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body class="light-mode">
-    <div class="container">
-        <h1>📈 Stock Prediction Dashboard</h1>
-        
-        <form action="/predict" method="POST">
-            <input type="text" name="ticker" placeholder="Enter Stock Symbol (e.g., AAPL)" required>
-            <button type="submit">Predict</button>
-        </form>
-
-        {% if ticker %}
-        <div class="result">
-            <h2>Prediction for {{ ticker }}</h2>
-            <p><strong>Signal:</strong> {{ signal }}</p>
-            <p><strong>MSE:</strong> {{ mse }}</p>
-            <p><strong>MAE:</strong> {{ mae }}</p>
-            <p><strong>RMSE:</strong> {{ rmse }}</p>
-            <p><strong>MAPE:</strong> {{ mape }}%</p>
-            <div id="graph"></div>
-        </div>
-
-        <script>
-            var graphJSON = {{ graph_json | safe }};
-            Plotly.newPlot("graph", graphJSON.data);
-        </script>
-        {% endif %}
-    </div>
-</body>
-</html> -->
-
-
-
-
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Prediction Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <div class="container mt-5">
-        <h1 class="text-center">📈 Stock Prediction Dashboard</h1>
-
-        <!-- Stock Symbol Input Form -->
-        <form action="/predict" method="POST" class="mt-4">
-            <div class="input-group mb-3">
-                <input type="text" name="ticker" class="form-control" placeholder="Enter Stock Symbol (e.g., AAPL)" required>
-                <button class="btn btn-primary" type="submit">Predict</button>
-            </div>
-        </form>
-
-        <!-- Display Results Only If Prediction Is Made -->
-        {% if ticker %}
-        <div class="card mt-4">
-            <div class="card-header text-white bg-success">
-                <h3 class="text-center">Prediction Results for {{ ticker }}</h3>
-            </div>
-            <div class="card-body">
-                <h5 class="text-center">
-                    <strong>📊 Buy/Sell Signal:</strong> 
-                    <span class="badge {% if signal == 'BUY' %} bg-success {% elif signal == 'SELL' %} bg-danger {% else %} bg-warning {% endif %}">
-                        {{ signal }}
-                    </span>
-                </h5>
-                <div class="row text-center mt-3">
-                    <div class="col-md-3">
-                        <p><strong>MSE:</strong> {{ mse }}</p>
-                    </div>
-                    <div class="col-md-3">
-                        <p><strong>MAE:</strong> {{ mae }}</p>
-                    </div>
-                    <div class="col-md-3">
-                        <p><strong>RMSE:</strong> {{ rmse }}</p>
-                    </div>
-                    <div class="col-md-3">
-                        <p><strong>MAPE:</strong> {{ mape }}%</p>
-                    </div>
-                </div>
-                <!-- Display Interactive Plotly Graph -->
-                <div class="mt-4">
-                    {{ graph_html | safe }}
-                </div>
-            </div>
-        </div>
-        {% endif %}
-    </div>
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const themeToggle = document.createElement("button");
-            themeToggle.className = "theme-toggle";
-            themeToggle.innerText = "🌙 Dark Mode";
-            document.body.appendChild(themeToggle);
-        
-            themeToggle.addEventListener("click", function () {
-                document.body.classList.toggle("dark-mode");
-                if (document.body.classList.contains("dark-mode")) {
-                    themeToggle.innerText = "☀️ Light Mode";
-                    localStorage.setItem("theme", "dark");
-                } else {
-                    themeToggle.innerText = "🌙 Dark Mode";
-                    localStorage.setItem("theme", "light");
-                }
-            });
-        
-            // Load theme from localStorage
-            if (localStorage.getItem("theme") === "dark") {
-                document.body.classList.add("dark-mode");
-                themeToggle.innerText = "☀️ Light Mode";
-            }
-        });
-        </script>
-        
-</body>
 </html>
