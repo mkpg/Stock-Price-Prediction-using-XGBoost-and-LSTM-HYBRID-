@@ -32,6 +32,8 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 import json
 import random
+import gc
+from tensorflow.keras import backend as K
 from dotenv import load_dotenv
 
 # Load environment variables - check Render secret files first, then local .env
@@ -1134,6 +1136,10 @@ def predict():
         import traceback
         traceback.print_exc()
         return render_template('index.html', error=f"Prediction error: {str(e)}", stats=get_homepage_stats())
+    finally:
+        # Aggressive memory cleanup for Render 512MB limit
+        K.clear_session()
+        gc.collect()
 
 
 # ================== API Endpoint for AJAX predictions ==================
@@ -1239,6 +1245,10 @@ def api_predict():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    finally:
+        # Aggressive memory cleanup
+        K.clear_session()
+        gc.collect()
 
 
 # ================== Analytics — LIVE DATA ==================
