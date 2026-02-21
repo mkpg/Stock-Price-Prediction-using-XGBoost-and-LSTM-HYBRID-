@@ -36,9 +36,8 @@ import gc
 from tensorflow.keras import backend as K
 from dotenv import load_dotenv
 
-# Load environment variables - check Render secret files first, then local .env
-load_dotenv('/etc/secrets/.env')  # Render secret files path
-load_dotenv()  # Local .env fallback
+# Load environment variables
+load_dotenv()
 
 print("[APP] Imports complete, connecting to database...")
 

@@ -1,0 +1,12 @@
+venv
+.env
+__pycache__
+*.pyc
+.git
+.gitignore
+node_modules
+.DS_Store
+*.md
+flowcharts.html
+Visual_Architecture.html
+Documentation

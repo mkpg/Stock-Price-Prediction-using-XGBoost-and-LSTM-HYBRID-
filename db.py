@@ -9,10 +9,9 @@ from bson import ObjectId
 import requests
 import os
 
-# Load env vars (needed when db.py is imported before app.py's load_dotenv)
+# Load env vars
 try:
     from dotenv import load_dotenv
-    load_dotenv('/etc/secrets/.env')  # Render secret files
     load_dotenv()  # Local .env fallback
 except ImportError:
     pass
